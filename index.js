@@ -33,14 +33,17 @@ async function main() {
   });
 
   io.on("connection", async (socket) => {
-    socket.on("chat message", async (msg) => {
+    socket.on("chat message", async (msg, clientOffset, callback) => {
       let result;
       try {
-        result = await db.run(`INSERT INTO MESSAGES (content) VALUES (?)`, msg);
+        result = await db.run(`INSERT INTO MESSAGES (content, client_offset) VALUES (?, ?)`, msg, clientOffset);
       } catch (e) {
+        if(e.errno == 19)
+          callback()
         return;
       }
       io.emit("chat message", msg, result.lastID);
+      callback()
     });
 
     if (!socket.recovered) {
